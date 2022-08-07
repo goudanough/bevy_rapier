@@ -708,6 +708,9 @@ pub fn init_colliders(
     let context = &mut *context;
     let scale = context.physics_scale;
 
+    let mut sorted_colliders: Vec<ColliderComponents> = colliders.iter().collect();
+    sorted_colliders.sort_by_key(|f| f.0);
+
     for (
         entity,
         shape,
@@ -721,7 +724,7 @@ pub fn init_colliders(
         collision_groups,
         solver_groups,
         contact_force_event_threshold,
-    ) in colliders.iter()
+    ) in sorted_colliders
     {
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
@@ -824,6 +827,9 @@ pub fn init_rigid_bodies(
 ) {
     let scale = context.physics_scale;
 
+    let mut sorted_rigid_bodies: Vec<RigidBodyComponents> = rigid_bodies.iter().collect();
+    sorted_rigid_bodies.sort_by_key(|f| f.0);
+
     for (
         entity,
         rb,
@@ -838,7 +844,7 @@ pub fn init_rigid_bodies(
         dominance,
         sleep,
         damping,
-    ) in rigid_bodies.iter()
+    ) in sorted_rigid_bodies
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
@@ -965,7 +971,10 @@ pub fn init_joints(
     let context = &mut *context;
     let scale = context.physics_scale;
 
-    for (entity, joint) in impulse_joints.iter() {
+    let mut sorted_impulse_joints: Vec<(Entity, &ImpulseJoint)> = impulse_joints.iter().collect();
+    sorted_impulse_joints.sort_by_key(|f| f.0);
+
+    for (entity, joint) in sorted_impulse_joints {
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -989,7 +998,11 @@ pub fn init_joints(
         }
     }
 
-    for (entity, joint) in multibody_joints.iter() {
+    let mut sorted_multibody_joints: Vec<(Entity, &MultibodyJoint)> =
+        multibody_joints.iter().collect();
+    sorted_multibody_joints.sort_by_key(|f| f.0);
+
+    for (entity, joint) in sorted_multibody_joints {
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
@@ -1067,7 +1080,10 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    for entity in removed_colliders.iter() {
+    let mut sorted_removed_colliders: Vec<Entity> = removed_colliders.iter().collect();
+    sorted_removed_colliders.sort();
+
+    for entity in sorted_removed_colliders {
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1076,7 +1092,10 @@ pub fn sync_removals(
         }
     }
 
-    for entity in orphan_colliders.iter() {
+    let mut sorted_orphan_colliders: Vec<Entity> = orphan_colliders.iter().collect();
+    sorted_orphan_colliders.sort();
+
+    for entity in sorted_orphan_colliders {
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
