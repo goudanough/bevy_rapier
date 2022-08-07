@@ -690,6 +690,9 @@ pub fn init_colliders(
     let context = &mut *context;
     let scale = context.physics_scale;
 
+    let mut sorted_components: Vec<ColliderComponents> = colliders.iter().collect();
+    sorted_components.sort_by_key(|f| f.0);
+
     for (
         entity,
         shape,
@@ -703,7 +706,7 @@ pub fn init_colliders(
         collision_groups,
         solver_groups,
         contact_force_event_threshold,
-    ) in colliders.iter()
+    ) in sorted_components
     {
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
@@ -806,6 +809,9 @@ pub fn init_rigid_bodies(
 ) {
     let scale = context.physics_scale;
 
+    let mut sorted_components: Vec<RigidBodyComponents> = rigid_bodies.iter().collect();
+    sorted_components.sort_by_key(|f| f.0);
+
     for (
         entity,
         rb,
@@ -820,7 +826,7 @@ pub fn init_rigid_bodies(
         dominance,
         sleep,
         damping,
-    ) in rigid_bodies.iter()
+    ) in sorted_components
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
