@@ -56,6 +56,8 @@ pub struct RapierConfiguration {
     pub physics_pipeline_active: bool,
     /// Specifies if the query pipeline is active and update the query pipeline.
     pub query_pipeline_active: bool,
+    /// Specifies if backend sync should always accept tranform changes, which may be from the writeback stage.
+    pub force_update_from_transform_changes: bool,
     /// Specifies the way the timestep length should be adjusted at each frame.
     pub timestep_mode: TimestepMode,
     /// Specifies the number of subdivisions along each axes a shape should be subdivided
@@ -77,6 +79,7 @@ impl Default for RapierConfiguration {
             gravity: Vect::Y * -9.81,
             physics_pipeline_active: true,
             query_pipeline_active: true,
+            force_update_from_transform_changes: false,
             timestep_mode: TimestepMode::Variable {
                 max_dt: 1.0 / 60.0,
                 time_scale: 1.0,
