@@ -719,11 +719,8 @@ pub fn init_colliders(
     let context = &mut *context;
     let physics_scale = context.physics_scale;
 
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut colliders: Vec<ColliderComponents> = colliders.iter().collect();
-        colliders.sort_by_key(|f| f.0);
-    }
+    let mut colliders: Vec<ColliderComponents> = colliders.iter().collect();
+    colliders.sort_by_key(|f| f.0);
 
     for (
         entity,
@@ -738,7 +735,7 @@ pub fn init_colliders(
         collision_groups,
         solver_groups,
         contact_force_event_threshold,
-    ) in colliders.iter()
+    ) in colliders
     {
         let mut scaled_shape = shape.clone();
         scaled_shape.set_scale(shape.scale / physics_scale, config.scaled_shape_subdivision);
@@ -842,11 +839,8 @@ pub fn init_rigid_bodies(
 ) {
     let physics_scale = context.physics_scale;
 
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut rigid_bodies: Vec<RigidBodyComponents> = rigid_bodies.iter().collect();
-        rigid_bodies.sort_by_key(|f| f.0);
-    }
+    let mut rigid_bodies: Vec<RigidBodyComponents> = rigid_bodies.iter().collect();
+    rigid_bodies.sort_by_key(|f| f.0);
 
     for (
         entity,
@@ -862,7 +856,7 @@ pub fn init_rigid_bodies(
         dominance,
         sleep,
         damping,
-    ) in rigid_bodies.iter()
+    ) in rigid_bodies
     {
         let mut builder = RigidBodyBuilder::new((*rb).into());
         if let Some(transform) = transform {
@@ -991,13 +985,10 @@ pub fn init_joints(
     let context = &mut *context;
     let scale = context.physics_scale;
 
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut impulse_joints: Vec<(Entity, &ImpulseJoint)> = impulse_joints.iter().collect();
-        impulse_joints.sort_by_key(|f| f.0);
-    }
+    let mut impulse_joints: Vec<(Entity, &ImpulseJoint)> = impulse_joints.iter().collect();
+    impulse_joints.sort_by_key(|f| f.0);
 
-    for (entity, joint) in impulse_joints.iter() {
+    for (entity, joint) in impulse_joints {
         let mut target = None;
         let mut body_entity = entity;
         while target.is_none() {
@@ -1021,14 +1012,10 @@ pub fn init_joints(
         }
     }
 
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut multibody_joints: Vec<(Entity, &MultibodyJoint)> =
-            multibody_joints.iter().collect();
-        multibody_joints.sort_by_key(|f| f.0);
-    }
+    let mut multibody_joints: Vec<(Entity, &MultibodyJoint)> = multibody_joints.iter().collect();
+    multibody_joints.sort_by_key(|f| f.0);
 
-    for (entity, joint) in multibody_joints.iter() {
+    for (entity, joint) in multibody_joints {
         let target = context.entity2body.get(&entity);
 
         if let (Some(target), Some(source)) = (target, context.entity2body.get(&joint.parent)) {
@@ -1106,13 +1093,10 @@ pub fn sync_removals(
     /*
      * Collider removal detection.
      */
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut removed_colliders: Vec<Entity> = removed_colliders.iter().collect();
-        removed_colliders.sort();
-    }
+    let mut removed_colliders: Vec<Entity> = removed_colliders.iter().collect();
+    removed_colliders.sort();
 
-    for entity in removed_colliders.iter() {
+    for entity in removed_colliders {
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
@@ -1121,13 +1105,10 @@ pub fn sync_removals(
         }
     }
 
-    #[cfg(feature = "enhanced-determinism")]
-    {
-        let mut orphan_colliders: Vec<Entity> = orphan_colliders.iter().collect();
-        orphan_colliders.sort();
-    }
+    let mut orphan_colliders: Vec<Entity> = orphan_colliders.iter().collect();
+    orphan_colliders.sort();
 
-    for entity in orphan_colliders.iter() {
+    for entity in orphan_colliders {
         if let Some(handle) = context.entity2collider.remove(&entity) {
             context
                 .colliders
