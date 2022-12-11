@@ -330,7 +330,7 @@ pub fn apply_rigid_body_user_changes(
             }
         };
 
-    log::info!("Updating transforms {}", changed_transforms.len());
+    log::info!("Updating transforms {}", changed_transforms.iter().count());
     log::info!(
         "Updating transforms to update {}",
         changed_transforms
