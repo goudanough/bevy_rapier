@@ -17,7 +17,8 @@ use crate::pipeline::{
 use crate::plugin::configuration::{SimulationToRenderTime, TimestepMode};
 use crate::plugin::{RapierConfiguration, RapierContext};
 use crate::prelude::{
-    CollidingEntities, KinematicCharacterController, KinematicCharacterControllerOutput,
+    get_snapped_scale, CollidingEntities, KinematicCharacterController,
+    KinematicCharacterControllerOutput,
 };
 use crate::utils;
 use bevy::ecs::query::WorldQuery;
@@ -108,7 +109,8 @@ pub fn apply_scale(
             None => transform.compute_transform().scale,
         };
 
-        if shape.scale != effective_scale {
+        if shape.scale != get_snapped_scale(effective_scale) {
+            log::info!("Updating collider scales");
             shape.set_scale(effective_scale, config.scaled_shape_subdivision);
         }
     }
@@ -149,6 +151,7 @@ pub fn apply_collider_user_changes(
     let scale = context.physics_scale;
 
     for (handle, transform) in changed_collider_transforms.iter() {
+        log::info!("Updating collider transforms");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             if co.parent().is_none() {
                 co.set_position(utils::transform_to_iso(
@@ -160,6 +163,7 @@ pub fn apply_collider_user_changes(
     }
 
     for (handle, shape) in changed_shapes.iter() {
+        log::info!("Updating collider shapes {:?}", handle);
         if let Some(co) = context.colliders.get_mut(handle.0) {
             let mut scaled_shape = shape.clone();
             scaled_shape.set_scale(shape.scale / scale, config.scaled_shape_subdivision);
@@ -168,24 +172,28 @@ pub fn apply_collider_user_changes(
     }
 
     for (handle, active_events) in changed_active_events.iter() {
+        log::info!("Updating collider active events");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_events((*active_events).into())
         }
     }
 
     for (handle, active_hooks) in changed_active_hooks.iter() {
+        log::info!("Updating collider active hooks");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_hooks((*active_hooks).into())
         }
     }
 
     for (handle, active_collision_types) in changed_active_collision_types.iter() {
+        log::info!("Updating collider active collision types");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_active_collision_types((*active_collision_types).into())
         }
     }
 
     for (handle, friction) in changed_friction.iter() {
+        log::info!("Updating collider friction");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_friction(friction.coefficient);
             co.set_friction_combine_rule(friction.combine_rule.into());
@@ -193,6 +201,7 @@ pub fn apply_collider_user_changes(
     }
 
     for (handle, restitution) in changed_restitution.iter() {
+        log::info!("Updating collider restitution");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_restitution(restitution.coefficient);
             co.set_restitution_combine_rule(restitution.combine_rule.into());
@@ -200,30 +209,35 @@ pub fn apply_collider_user_changes(
     }
 
     for (handle, collision_groups) in changed_collision_groups.iter() {
+        log::info!("Updating collider collision groups");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_collision_groups((*collision_groups).into());
         }
     }
 
     for (handle, solver_groups) in changed_solver_groups.iter() {
+        log::info!("Updating collider solver groups");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_solver_groups((*solver_groups).into());
         }
     }
 
     for (handle, _) in changed_sensors.iter() {
+        log::info!("Updating collider sensors");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_sensor(true);
         }
     }
 
     for (handle, threshold) in changed_contact_force_threshold.iter() {
+        log::info!("Updating collider contact force");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             co.set_contact_force_event_threshold(threshold.0);
         }
     }
 
     for (handle, mprops) in changed_collider_mass_props.iter() {
+        log::info!("Updating collider mass props");
         if let Some(co) = context.colliders.get_mut(handle.0) {
             match mprops {
                 ColliderMassProperties::Density(density) => co.set_density(*density),
@@ -272,6 +286,7 @@ pub fn apply_rigid_body_user_changes(
     // Deal with sleeping first, because other changes may then wake-up the
     // rigid-body again.
     for (handle, sleeping) in changed_sleeping.iter() {
+        log::info!("Updating sleeping");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             let activation = rb.activation_mut();
             activation.linear_threshold = sleeping.linear_threshold;
@@ -292,6 +307,7 @@ pub fn apply_rigid_body_user_changes(
     //       changed to anything else, a transform change would modify the next
     //       position instead of the current one.
     for (handle, rb_type) in changed_rb_types.iter() {
+        log::info!("Updating body type");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_body_type((*rb_type).into());
         }
@@ -313,6 +329,15 @@ pub fn apply_rigid_body_user_changes(
                 true
             }
         };
+
+    log::info!("Updating transforms {}", changed_transforms.len());
+    log::info!(
+        "Updating transforms to update {}",
+        changed_transforms
+            .iter()
+            .filter(|(h, t, _)| transform_changed(&h.0, t, &context.last_body_transform_set))
+            .count()
+    );
 
     for (handle, global_transform, mut interpolation) in changed_transforms.iter_mut() {
         if let Some(interpolation) = interpolation.as_deref_mut() {
@@ -359,6 +384,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, velocity) in changed_velocities.iter() {
+        log::info!("Updating velocity");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linvel((velocity.linvel / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -367,6 +393,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, mprops) in changed_additional_mass_props.iter() {
+        log::info!("Updating mass props");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             match mprops {
                 AdditionalMassProperties::MassProperties(mprops) => {
@@ -380,12 +407,14 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, locked_axes) in changed_locked_axes.iter() {
+        log::info!("Updating locked axes");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_locked_axes((*locked_axes).into(), true);
         }
     }
 
     for (handle, forces) in changed_forces.iter() {
+        log::info!("Updating forces");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.reset_forces(true);
             rb.reset_torques(true);
@@ -396,6 +425,7 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, mut impulses) in changed_impulses.iter_mut() {
+        log::info!("Updating impulses");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.apply_impulse((impulses.impulse / scale).into(), true);
             #[allow(clippy::useless_conversion)] // Need to convert if dim3 enabled
@@ -405,24 +435,28 @@ pub fn apply_rigid_body_user_changes(
     }
 
     for (handle, gravity_scale) in changed_gravity_scale.iter() {
+        log::info!("Updating gravity scale");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_gravity_scale(gravity_scale.0, true);
         }
     }
 
     for (handle, ccd) in changed_ccd.iter() {
+        log::info!("Updating ccd");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.enable_ccd(ccd.enabled);
         }
     }
 
     for (handle, dominance) in changed_dominance.iter() {
+        log::info!("Updating dominance");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_dominance_group(dominance.groups);
         }
     }
 
     for (handle, damping) in changed_damping.iter() {
+        log::info!("Updating damping");
         if let Some(rb) = context.bodies.get_mut(handle.0) {
             rb.set_linear_damping(damping.linear_damping);
             rb.set_angular_damping(damping.angular_damping);
@@ -447,12 +481,14 @@ pub fn apply_joint_user_changes(
     // TODO: right now, we only support propagating changes made to the joint data.
     //       Re-parenting the joint isn’t supported yet.
     for (handle, changed_joint) in changed_impulse_joints.iter() {
+        log::info!("Updating impulse joint");
         if let Some(joint) = context.impulse_joints.get_mut(handle.0) {
             joint.data = changed_joint.data.into_rapier(scale);
         }
     }
 
     for (handle, changed_joint) in changed_multibody_joints.iter() {
+        log::info!("Updating multibody joint");
         // TODO: not sure this will always work properly, e.g., if the number of Dofs is changed.
         if let Some((mb, link_id)) = context.multibody_joints.get_mut(handle.0) {
             if let Some(link) = mb.link_mut(link_id) {

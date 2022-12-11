@@ -499,3 +499,20 @@ impl CollidingEntities {
         self.0.iter().copied()
     }
 }
+
+/// It snaps baby
+pub fn get_snapped_scale(scale: Vect) -> Vect {
+    /// We restrict the scaling increment to 1.0e-4, to avoid numerical jitter
+    /// due to the extraction of scaling factor from the GlobalTransform matrix.
+    fn snap_value(new: f32) -> f32 {
+        const PRECISION: f32 = 1.0e4;
+        (new * PRECISION).round() / PRECISION
+    }
+
+    Vect {
+        x: snap_value(scale.x),
+        y: snap_value(scale.y),
+        #[cfg(feature = "dim3")]
+        z: snap_value(scale.z),
+    }
+}
